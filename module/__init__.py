@@ -5,6 +5,22 @@ import traceback
 from typing import Union
 import threading
 import sys
+import os
+
+
+class Path:
+    def __init__(self, _file_: str):
+        self._file = os.path.normpath(_file_)
+        self._source = os.path.dirname(self._file)
+        self._app = os.path.normpath(os.path.dirname(sys.executable)) if getattr(sys, "frozen", False) else self._source
+
+    @property
+    def source(self):
+        return self._dir
+
+    @property
+    def app(self):
+        return self._app
 
 
 win_pos = Union[list[int, int], tuple[int, int]]
