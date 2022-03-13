@@ -1,5 +1,5 @@
 from __future__ import annotations
-from win32gui import SetParent, SetWindowPos, GetWindowRect
+from win32gui import SetParent, SetWindowPos, GetWindowRect, EnableWindow
 import ctypes
 import traceback
 from typing import Union
@@ -9,18 +9,34 @@ import os
 
 
 class Path:
+
+    class StringPath(str):
+        def __init__(self, path: str):
+            self._path = os.path.normpath(path)
+            super().__init__()
+
+        def join(self, *args: str):
+            path = [os.path.normpath(p) for p in args]
+            return os.path.join(self._path, *path)
+
+        def __str__(self):
+            return self._path
+
     def __init__(self, _file_: str):
         self._file = os.path.normpath(_file_)
         self._source = os.path.dirname(self._file)
-        self._app = os.path.normpath(os.path.dirname(sys.executable)) if getattr(sys, "frozen", False) else self._source
+        if getattr(sys, "frozen", False):
+            self._app = os.path.normpath(os.path.dirname(sys.executable))
+        else:
+            self._app = self._source
 
     @property
     def source(self):
-        return self._dir
+        return Path.StringPath(self._source)
 
     @property
     def app(self):
-        return self._app
+        return Path.StringPath(self._app)
 
 
 win_pos = Union[list[int, int], tuple[int, int]]
@@ -37,6 +53,15 @@ class Window:
         self._height = rect[3] - self._y
         self._pos = [self._x, self._y]
         self._size = [self._width, self._height]
+        self._enabled = True
+
+    @classmethod
+    def from_pyqt(cls, obj):
+        return cls(int(obj.winId()))
+
+    @classmethod
+    def from_tkinter(cls, obj):
+        return cls(int(obj.root()))
 
     def _update(self):
         SetWindowPos(self.hwnd, 0, self._pos[0], self._pos[1], self._size[0], self._size[1], 0)
@@ -44,6 +69,20 @@ class Window:
     @property
     def hwnd(self):
         return self._hwnd
+
+    @property
+    def enabled(self):
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError("Enabled must be a boolean")
+        self.set_enabled(value)
+
+    def set_enabled(self, __b: bool):
+        self._enabled = __b
+        EnableWindow(self.hwnd, __b)
 
     @property
     def x(self):
@@ -101,28 +140,29 @@ class Window:
     def size(self, new_size: win_size):
         self.set_window_size(new_size)
 
+    def set_window_size(self, width: int, height: int):
+        self._width, self.height = width, height
+        self._size[0] = width
+        self._size[1] = height
+        self._update()
+
     @property
     def position(self):
         return self._pos
 
     @position.setter
     def position(self, new_pos: win_pos):
-        self.set_window_position(new_pos)
+        if not isinstance(new_pos, (list, tuple)):
+            raise ValueError("Position must be a tuple[int, int] or list[int, int]")
+        self.set_window_position(*new_pos)
 
-    def attach_child(self, child):
+    def attach_child(self, child: Window):
         SetParent(child.hwnd, self.hwnd)
 
-    def set_window_position(self, pos: win_pos):
-        if not isinstance(pos, win_pos):
-            raise ValueError("Position must be a tuple[int, int] or list[int, int]")
-        self._pos[0] = pos[0]
-        self._pos[1] = pos[1]
-        self._update()
-
-    def set_window_size(self, size: win_size):
-        if not isinstance(size, win_size):
-            raise ValueError("Size must be a tuple[int, int] or list[int int]")
-        self._size = size
+    def set_window_position(self, x: int, y: int):
+        self._x, self._y = x, y
+        self._pos[0] = x
+        self._pos[1] = y
         self._update()
 
     def hide(self):
@@ -130,6 +170,18 @@ class Window:
 
     def show(self):
         ctypes.windll.user32.ShowWindow(self.hwnd, 1)
+
+
+class ThreadList(list):
+    lock = threading.Lock()
+    _i = -1
+
+    def next(self):
+        with self.lock:
+            self._i += 1
+            __i = self._i
+        if __i < self.__len__():
+            return super().__getitem__(__i)
 
 
 def hide_console():
@@ -147,15 +199,3 @@ def alert_excepthook():
         sys.exit(0)
 
     sys.excepthook = excepthook
-
-
-class ThreadList(list):
-    lock = threading.Lock()
-    _i = -1
-
-    def next(self):
-        with self.lock:
-            self._i += 1
-            __i = self._i
-        if __i < self.__len__():
-            return super().__getitem__(__i)
