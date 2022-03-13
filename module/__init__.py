@@ -2,6 +2,7 @@ from __future__ import annotations
 from win32gui import (SetParent, SetWindowPos, GetWindowRect, EnableWindow, EnumWindows,
                       GetWindowText, IsWindowVisible, IsWindowEnabled)
 from win32process import GetWindowThreadProcessId
+import pywintypes
 import ctypes
 import traceback
 from typing import Union
@@ -47,8 +48,11 @@ win_size = Union[list[int, int], tuple[int, int]]
 
 class Window:
     def __init__(self, hwnd: int):
+        try:
+            rect = GetWindowRect(hwnd)
+        except pywintypes.error:
+            raise ValueError("Invalid window handle. HWND: %s" % hwnd)
         self._hwnd = hwnd
-        rect = GetWindowRect(hwnd)
         self._x = rect[0]
         self._y = rect[1]
         self._width = rect[2] - self._x
@@ -56,17 +60,24 @@ class Window:
         self._pos = [self._x, self._y]
         self._size = [self._width, self._height]
         self._enabled = IsWindowEnabled(self._hwnd)
+        self._pid = GetWindowThreadProcessId(self._hwnd)
 
     def __str__(self):
         return str(self._hwnd) + " " + GetWindowText(self._hwnd)
 
     @classmethod
     def from_pyqt(cls, obj):
-        return cls(int(obj.winId()))
+        try:
+            return cls(int(obj.winId()))
+        except AttributeError:
+            return None
 
     @classmethod
     def from_tkinter(cls, obj):
-        return cls(int(obj.root()))
+        try:
+            return cls(int(obj.root()))
+        except AttributeError:
+            return None
 
     @classmethod
     def from_pid(cls, pid: int):
@@ -82,12 +93,26 @@ class Window:
         if result:
             return cls(result[0])
 
+    def list_window_handles(self) -> list:
+        result = []
+
+        def handle(hwnd, _):
+            if IsWindowVisible(hwnd):
+                result.append(hwnd)
+
+        EnumWindows(handle, None)
+        return result
+
     def _update(self):
         SetWindowPos(self.hwnd, 0, self._pos[0], self._pos[1], self._size[0], self._size[1], 0)
 
     @property
     def hwnd(self):
         return self._hwnd
+
+    @property
+    def pid(self):
+        return self._pid
 
     @property
     def enabled(self):
@@ -157,7 +182,7 @@ class Window:
 
     @size.setter
     def size(self, new_size: win_size):
-        self.set_window_size(new_size)
+        self.set_window_size(*new_size)
 
     def set_window_size(self, width: int, height: int):
         self._width, self.height = width, height
@@ -175,7 +200,7 @@ class Window:
             raise ValueError("Position must be a tuple[int, int] or list[int, int]")
         self.set_window_position(*new_pos)
 
-    def attach_child(self, child: Window):
+    def attack_child(self, child: Window):
         SetParent(child.hwnd, self.hwnd)
 
     def set_window_position(self, x: int, y: int):
@@ -214,6 +239,7 @@ def alert_excepthook():
 
     def excepthook(exc_type, exc_value, exc_tb):
         tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+        print(str(tb))
         ctypes.windll.user32.MessageBoxW(None, str(tb), "ERROR", 0)
         sys.exit(0)
 
