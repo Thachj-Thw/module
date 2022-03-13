@@ -1,0 +1,49 @@
+Metadata-Version: 2.1
+Name: module-Thw
+Version: 0.0.1
+Summary: some module
+Home-page: https://github.com/Thachj-Thw/module
+Author: Thw
+Author-email: 
+License: UNKNOWN
+Project-URL: Source, https://github.com/Thachj-Thw/module
+Keywords: module
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Natural Language :: Vietnamese
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+
+# module
+
+Some module for python
+
+## Installation
+
+```bash
+pip install module-thw
+```
+
+## Example
+
+```python
+import subprocess
+import module
+import time
+
+
+p = subprocess.Popen("C:\\WINDOWS\\system32\\notepad.exe")
+time.sleep(.1)
+notepad = module.Window.from_pid(p.pid)
+print(notepad)
+notepad.position = (0, 0)
+# or
+# notepad.set_window_position(0, 0)
+
+```
+
+

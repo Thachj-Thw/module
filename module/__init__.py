@@ -1,5 +1,7 @@
 from __future__ import annotations
-from win32gui import SetParent, SetWindowPos, GetWindowRect, EnableWindow
+from win32gui import (SetParent, SetWindowPos, GetWindowRect, EnableWindow, EnumWindows,
+                      GetWindowText, IsWindowVisible, IsWindowEnabled)
+from win32process import GetWindowThreadProcessId
 import ctypes
 import traceback
 from typing import Union
@@ -53,7 +55,10 @@ class Window:
         self._height = rect[3] - self._y
         self._pos = [self._x, self._y]
         self._size = [self._width, self._height]
-        self._enabled = True
+        self._enabled = IsWindowEnabled(self._hwnd)
+
+    def __str__(self):
+        return str(self._hwnd) + " " + GetWindowText(self._hwnd)
 
     @classmethod
     def from_pyqt(cls, obj):
@@ -62,6 +67,20 @@ class Window:
     @classmethod
     def from_tkinter(cls, obj):
         return cls(int(obj.root()))
+
+    @classmethod
+    def from_pid(cls, pid: int):
+        result = []
+
+        def handle(hwnd, _):
+            if IsWindowVisible(hwnd):
+                _, cpid = GetWindowThreadProcessId(hwnd)
+                if cpid == pid:
+                    result.append(hwnd)
+
+        EnumWindows(handle, None)
+        if result:
+            return cls(result[0])
 
     def _update(self):
         SetWindowPos(self.hwnd, 0, self._pos[0], self._pos[1], self._size[0], self._size[1], 0)
