@@ -1,7 +1,8 @@
 from __future__ import annotations
-from win32gui import (SetParent, SetWindowPos, GetWindowRect, EnableWindow, EnumWindows,
-                      GetWindowText, IsWindowVisible, IsWindowEnabled)
+from win32gui import (SetParent, SetWindowPos, GetWindowRect, EnableWindow, EnumWindows, GetWindowText,
+                      IsWindowVisible, IsWindowEnabled, GetSystemMenu, DeleteMenu)
 from win32process import GetWindowThreadProcessId
+import win32con
 import pywintypes
 import ctypes
 import traceback
@@ -57,13 +58,18 @@ class Window:
         self._y = rect[1]
         self._width = rect[2] - self._x
         self._height = rect[3] - self._y
-        self._pos = [self._x, self._y]
-        self._size = [self._width, self._height]
         self._enabled = IsWindowEnabled(self._hwnd)
         self._pid = GetWindowThreadProcessId(self._hwnd)
 
     def __str__(self):
         return str(self._hwnd) + " " + GetWindowText(self._hwnd)
+
+    def _refresh(self):
+        rect = GetWindowRect(self._hwnd)
+        self._x = rect[0]
+        self._y = rect[1]
+        self._width = rect[2] - self._x
+        self._height = rect[3] - self._y
 
     @classmethod
     def from_pyqt(cls, obj):
@@ -90,8 +96,7 @@ class Window:
                     result.append(hwnd)
 
         EnumWindows(handle, None)
-        if result:
-            return cls(result[0])
+        return [cls(hwnd) for hwnd in result]
 
     def list_window_handles(self) -> list:
         result = []
@@ -104,7 +109,7 @@ class Window:
         return result
 
     def _update(self):
-        SetWindowPos(self.hwnd, 0, self._pos[0], self._pos[1], self._size[0], self._size[1], 0)
+        SetWindowPos(self.hwnd, 0, self._x, self._y, self._width, self._height, 0)
 
     @property
     def hwnd(self):
@@ -130,6 +135,7 @@ class Window:
 
     @property
     def x(self):
+        self._refresh()
         return self._x
 
     @x.setter
@@ -137,11 +143,11 @@ class Window:
         if not isinstance(value, int):
             raise TypeError("X must be an integer")
         self._x = value
-        self._pos[0] = value
         self._update()
 
     @property
     def y(self):
+        self._refresh()
         return self._y
 
     @y.setter
@@ -149,11 +155,11 @@ class Window:
         if not isinstance(value, int):
             raise TypeError("Y must be an integer")
         self._y = value
-        self._pos[1] = value
         self._update()
 
     @property
     def width(self):
+        self._refresh()
         return self._width
 
     @width.setter
@@ -161,11 +167,11 @@ class Window:
         if not isinstance(value, int):
             raise TypeError("Width must be an integer")
         self._width = value
-        self._size[0] = value
         self._update()
 
     @property
     def height(self):
+        self._refresh()
         return self._height
 
     @height.setter
@@ -173,12 +179,12 @@ class Window:
         if not isinstance(value, int):
             raise ValueError("Height must be an integer")
         self._height = value
-        self._size[1] = value
         self._update()
 
     @property
     def size(self):
-        return self._size
+        self._refresh()
+        return self._width, self._height
 
     @size.setter
     def size(self, new_size: win_size):
@@ -186,13 +192,12 @@ class Window:
 
     def set_window_size(self, width: int, height: int):
         self._width, self.height = width, height
-        self._size[0] = width
-        self._size[1] = height
         self._update()
 
     @property
     def position(self):
-        return self._pos
+        self._refresh()
+        return self._x, self._y
 
     @position.setter
     def position(self, new_pos: win_pos):
@@ -205,8 +210,6 @@ class Window:
 
     def set_window_position(self, x: int, y: int):
         self._x, self._y = x, y
-        self._pos[0] = x
-        self._pos[1] = y
         self._update()
 
     def hide(self):
@@ -214,6 +217,14 @@ class Window:
 
     def show(self):
         ctypes.windll.user32.ShowWindow(self.hwnd, 1)
+
+    def remove_title_bar(self):
+        print("warning remove_title_bar untested")
+        title = GetSystemMenu(self.hwnd, 0)
+        if title:
+            DeleteMenu(title, win32con.SC_CLOSE, win32con.MF_BYCOMMAND)
+            DeleteMenu(title, win32con.SC_MINIMIZE, win32con.MF_BYCOMMAND)
+            DeleteMenu(title, win32con.SC_MAXIMIZE, win32con.MF_BYCOMMAND)
 
 
 class ThreadList(list):

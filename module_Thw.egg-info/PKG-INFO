@@ -1,14 +1,12 @@
 Metadata-Version: 2.1
 Name: module-Thw
-Version: 0.0.2
+Version: 0.0.3
 Summary: some module
 Home-page: https://github.com/Thachj-Thw/module
 Author: Thw
 Author-email: 
-License: UNKNOWN
 Project-URL: Source, https://github.com/Thachj-Thw/module
 Keywords: module
-Platform: UNKNOWN
 Classifier: Development Status :: 5 - Production/Stable
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
@@ -115,5 +113,3 @@ import module
 module.alert_excepthook()
 
 ```
-
-
