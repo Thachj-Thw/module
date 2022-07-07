@@ -90,10 +90,9 @@ class Window:
         result = []
 
         def handle(hwnd, _):
-            if IsWindowVisible(hwnd):
-                _, cpid = GetWindowThreadProcessId(hwnd)
-                if cpid == pid:
-                    result.append(hwnd)
+            _, cpid = GetWindowThreadProcessId(hwnd)
+            if cpid == pid:
+                result.append(hwnd)
 
         EnumWindows(handle, None)
         return [cls(hwnd) for hwnd in result]
@@ -231,9 +230,12 @@ class ThreadList(list):
     lock = threading.Lock()
     _i = -1
 
-    def next(self):
+    def next(self, loop=False):
         with self.lock:
-            self._i += 1
+            if loop:
+                self._i = (self._i + 1) % self.__len__()
+            else:
+                self._i += 1
             __i = self._i
         if __i < self.__len__():
             return super().__getitem__(__i)
@@ -255,3 +257,30 @@ def alert_excepthook():
         sys.exit(0)
 
     sys.excepthook = excepthook
+
+
+
+class TypesButtons:
+    OK = 0
+    OK_CANCEL = 1
+    ABORT_RETRY_IGNORE = 2
+    YES_NO_CANCEL = 3
+    YES_NO = 4
+    RETRY_CANCEL = 5
+    CANCEL_TRY_AGAIN_CONTINUE = 6
+
+
+class Button:
+    OK = 1
+    CANCEL = 2
+    ABORT = 3
+    RETRY = 4
+    IGNORE = 5
+    YES = 6
+    NO = 7
+    TRY_AGAIN = 10
+    CONTINUE = 11
+
+
+def alert(title, message, type_button):
+    return ctypes.windll.user32.MessageBoxW(None, message, title, type_button)
