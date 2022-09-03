@@ -97,6 +97,9 @@ class Window:
         EnumWindows(handle, None)
         return [cls(hwnd) for hwnd in result]
 
+    def is_visible(self):
+        return IsWindowVisible(self._hwnd)
+
     def list_window_handles(self) -> list:
         result = []
 
@@ -204,7 +207,7 @@ class Window:
             raise ValueError("Position must be a tuple[int, int] or list[int, int]")
         self.set_window_position(*new_pos)
 
-    def attack_child(self, child: Window):
+    def attachments(self, child: Window):
         SetParent(child.hwnd, self.hwnd)
 
     def set_window_position(self, x: int, y: int):
@@ -270,7 +273,7 @@ class TypesButtons:
     CANCEL_TRY_AGAIN_CONTINUE = 6
 
 
-class Button:
+class Buttons:
     OK = 1
     CANCEL = 2
     ABORT = 3
@@ -282,5 +285,5 @@ class Button:
     CONTINUE = 11
 
 
-def alert(title, message, type_button):
+def alert(title, message, type_button=TypesButtons.OK):
     return ctypes.windll.user32.MessageBoxW(None, message, title, type_button)

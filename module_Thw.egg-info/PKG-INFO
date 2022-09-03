@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: module-Thw
-Version: 0.0.4
+Version: 0.0.6
 Summary: some module
 Home-page: https://github.com/Thachj-Thw/module
 Author: Thw
@@ -40,16 +40,17 @@ import time
 p1 = subprocess.Popen("C:\\WINDOWS\\system32\\notepad.exe")
 p2 = subprocess.Popen("C:\\WINDOWS\\system32\\notepad.exe")
 time.sleep(.1)
-note1 = module.Window.from_pid(p1.pid)
-note2 = module.Window.from_pid(p2.pid)
-print(note1)
-print(note2)
-if note1 and note2:
-    note2.position = (0, 0)
-    note2.size = (500, 300)
-    note1.size = (600, 600)
-    note1.attack_child(note2)
-
+lst_note1 = module.Window.from_pid(p1.pid)
+lst_note2 = module.Window.from_pid(p2.pid)
+print(lst_note1)
+print(lst_note2)
+for note1 in lst_note1:
+    if note1.is_visible():
+        for note2 in lst_note2:
+            note2.position = (0, 0)
+            note2.size = (500, 300)
+            note1.attachments(note2)
+        break
 ```
 
 ### Path
@@ -112,4 +113,18 @@ import module
 
 module.alert_excepthook()
 
+a = 1 / 0
+
+```
+
+### alert
+
+a window message box, return button clicked
+
+```python
+import module
+
+
+button = module.alert("this is a title", "this is a message", module.TypesButtons.OK_CANCEL)
+print(button == module.Buttons.OK)
 ```
